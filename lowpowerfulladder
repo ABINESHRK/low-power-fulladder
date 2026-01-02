@@ -1,0 +1,64 @@
+module xor_xnor #(
+    parameter DELAY = 1   
+)(
+    input  logic a,       
+    input  logic b,       
+    output logic xor_out, 
+    output logic xnor_out 
+);
+
+    
+    logic term1;
+    logic term2;
+
+    always_comb begin
+        term1 = a & ~b;
+        term2 = ~a & b;
+        xor_out  = term1 | term2;
+        xnor_out = ~(xor_out);
+    end
+
+endmodule
+
+
+
+module low_power_full_adder #(
+    parameter DELAY = 1   
+)(
+    input  logic a,       
+    input  logic b,       
+    input  logic cin,     
+    output logic sum,     
+    output logic cout     
+);
+
+    
+    logic xor1, xnor1;    
+    logic xor2, xnor2;    
+    logic and_ab;         
+    logic and_cin_xor1;   
+
+    
+    xor_xnor #(.DELAY(DELAY)) U1 (
+        .a        (a),
+        .b        (b),
+        .xor_out  (xor1),
+        .xnor_out (xnor1)
+    );
+
+    
+    xor_xnor #(.DELAY(DELAY)) U2 (
+        .a        (xor1),
+        .b        (cin),
+        .xor_out  (sum),
+        .xnor_out (xnor2)
+    );
+
+    
+    always_comb begin
+        and_ab       = a & b;
+        and_cin_xor1 = cin & xor1;
+        cout         = and_ab | and_cin_xor1;
+    end
+
+endmodule
