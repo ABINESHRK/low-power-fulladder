@@ -1,0 +1,89 @@
+`timescale 1ns/1ps
+
+module tb_low_power_full_adder;
+
+    // DUT inputs
+    logic a;        
+    logic b;        
+    logic cin;      
+
+    // DUT outputs
+    logic sum;      
+    logic cout;     
+
+    // Reference outputs
+    logic ref_sum;
+    logic ref_cout;
+
+    // Counters
+    int pass_count = 0;
+    int fail_count = 0;
+
+    // Instantiate Device Under Test (DUT)
+    low_power_full_adder #(.DELAY(1)) dut (
+        .a    (a),
+        .b    (b),
+        .cin  (cin),
+        .sum  (sum),
+        .cout (cout)
+    );
+
+    // Reference model for golden outputs
+    task automatic reference_model (
+        input  logic a_i,
+        input  logic b_i,
+        input  logic cin_i,
+        output logic sum_o,
+        output logic cout_o
+    );
+        logic xor_ab;
+        xor_ab   = a_i ^ b_i;
+        sum_o    = xor_ab ^ cin_i;
+        cout_o   = (a_i & b_i) | (cin_i & xor_ab);
+    endtask
+
+    // Test process
+    initial begin
+        $display("====================================================");
+        $display("   Testing Low Power Full Adder using Novel XOR/XNOR");
+        $display("====================================================");
+        $display(" A  B  Cin | DUT_Sum DUT_Cout | REF_Sum REF_Cout | Result");
+        $display("----------------------------------------------------");
+
+        // Exhaustive test of all 8 input combinations
+        for (int i = 0; i < 8; i++) begin
+            {a, b, cin} = i;
+            #5;
+
+            reference_model(a, b, cin, ref_sum, ref_cout);
+
+            if ((sum === ref_sum) && (cout === ref_cout)) begin
+                pass_count++;
+                $display(" %0b  %0b   %0b  |    %0b       %0b    |    %0b       %0b    | PASS",
+                         a, b, cin, sum, cout, ref_sum, ref_cout);
+            end else begin
+                fail_count++;
+                $display(" %0b  %0b   %0b  |    %0b       %0b    |    %0b       %0b    | FAIL",
+                         a, b, cin, sum, cout, ref_sum, ref_cout);
+            end
+        end
+
+        $display("----------------------------------------------------");
+        $display(" Test Completed: %0d Passed, %0d Failed",
+                 pass_count, fail_count);
+        $display("====================================================");
+
+        $finish;
+    end
+
+endmodule
+
+// =============================================================
+// NOTE: Vivado XSIM does not support $dumpfile/$dumpvars.
+// To dump waveforms to a .vcd file, run these commands in Tcl:
+// 
+// open_vcd tb_low_power_full_adder.vcd
+// log_vcd *
+// run all
+// close_vcd
+// =============================================================
